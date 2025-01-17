@@ -11,11 +11,11 @@ function Game({playerColour}: {playerColour: string}) {
     const [gameOver, setGameOver] = useState("");
 
     const makeMove = useCallback(
-        // move param has source square, target square, and colour of the piece
-        (move: {
+        // move param has source square, target square, and promotion if applicable
+        (move: string | {
             from: string;
             to: string;
-            color: 'w' | 'b';
+            promotion?: string;
         }) => {
             try {
                 const result = chess.move(move);
@@ -31,27 +31,42 @@ function Game({playerColour}: {playerColour: string}) {
                 return null;
             }
     }, [chess])
+
+    const makeComputerMove = useCallback(() => {
+        const moves = chess.moves();
+        if (chess.isGameOver() || moves.length === 0) {
+            return;
+        }
+        const move = moves[Math.floor(Math.random() * moves.length)];
+        makeMove(move);
+    }, [chess]);
     
     function onDrop(sourceSquare: string, targetSquare: string): boolean {
         const moveData = {
             from: sourceSquare,
             to: targetSquare,
-            color: chess.turn()
+            promotion: "q",
         };
         
-        const move = makeMove(moveData)
+        const move = makeMove(moveData) 
 
         if (move === null) {
             return false;
         }
-
+        makeComputerMove();
         return true;
     };
 
     return (
         <>
             <div>
-                <Chessboard position={fen} onPieceDrop={onDrop} boardWidth={400} boardOrientation={orientation as BoardOrientation}/>
+                <Chessboard 
+                    position={fen} 
+                    onPieceDrop={onDrop} 
+                    boardWidth={400} 
+                    boardOrientation={orientation as BoardOrientation}
+                    
+                />
 
                 <ReactModal isOpen={gameOver !== ""}>
                     <h1>{gameOver}</h1>
@@ -59,6 +74,7 @@ function Game({playerColour}: {playerColour: string}) {
                         chess.reset();
                         if (orientation === "white") {
                             setOrientation("black");
+                            makeComputerMove();
                         }
                         else {
                             setOrientation("white");
